@@ -1,1 +1,1 @@
-# serv00-auto-regis
+# serv00-auto-register
