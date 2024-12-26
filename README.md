@@ -1,10 +1,2 @@
-# **serv00-auto-register**
-
-## **注意事项**  
-1. 请修改邮箱为自己的注册邮箱后再执行脚本。  
-2. 在浏览器的控制台运行代码即可。
-3. 需要自己填入验证码并点击提交。
-
-### **提示**  
-- 验证码的自动识别功能（基于云码）正确率较低，已暂时放弃。  
-- 后续如果有优化的机会，再进行更新。  
+# **socks5-for-serv00**
+bash <(curl -s https://raw.githubusercontent.com/duanxinyua/socks5-for-serv00/main/install-socks5.sh)
