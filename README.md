@@ -4,3 +4,10 @@
 
 ```bash
 bash <(curl -s https://raw.githubusercontent.com/duanxinyua/socks5-for-serv00/main/install-socks5.sh)
+```
+
+Serv00甬哥专用一键脚本 (默认自动安装进程保活)：  
+
+```bash
+bash <(curl -Ls https://raw.githubusercontent.com/yonggekkk/Cloudflare_vless_trojan/main/serv00_proxyip.sh)
+```
