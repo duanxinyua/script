@@ -6,6 +6,8 @@
 bash <(curl -s https://raw.githubusercontent.com/duanxinyua/socks5-for-serv00/main/install-socks5.sh)
 ```
 
+# **支持一键三协议：vless-reality、vmess-ws(argo)、hysteria2**
+
 Serv00甬哥专用一键脚本 (默认自动安装进程保活)：  
 
 ```bash
