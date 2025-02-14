@@ -1,60 +1,39 @@
-name: Run SSH Command
+name: Execute SSH Commands
 
 on:
-  workflow_dispatch:
+  workflow_dispatch: # 手动触发工作流
   schedule:
-    - cron: '0 * * * *'  # 每小时执行一次
+    # - cron: "0 * * * *"  # 0 */4 * * *
+    - cron: "0 */4 * * *"
 
 jobs:
-  run-ssh-command:
+  execute-commands:
     runs-on: ubuntu-latest
-
     steps:
-      - name: 检出代码
-        uses: actions/checkout@v4
+      - name: Set up SSHPass
+        run: sudo apt-get update && sudo apt-get install -y sshpass
 
-      - name: 安装必要工具
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y jq expect
-
-      - name: 解析 ACCOUNTS_JSON 并存入环境变量
-        env:
-          ACCOUNTS_JSON: ${{ secrets.ACCOUNTS_JSON }}
+      - name: Get ACCOUNTS_JSON
+        id: get-accounts
         run: |
           echo "$ACCOUNTS_JSON" > accounts.json
-          echo "ACCOUNTS=$(jq -c . accounts.json)" >> $GITHUB_ENV
+        env:
+          ACCOUNTS_JSON: ${{ secrets.ACCOUNTS_JSON }}
+        # 从 GitHub Secrets 获取 ACCOUNTS_JSON 变量，并保存到文件 accounts.json
 
-      - name: 通过 SSH 连接并执行命令
+      - name: Generate SSH Commands
+        id: generate-ssh-commands
         run: |
-          set +e
-          echo "$ACCOUNTS" | jq -c '.[]' | while read -r account; do
+          echo "#!/bin/bash" > sshpass.sh
+          while IFS= read -r account; do
             username=$(echo "$account" | jq -r '.username')
             password=$(echo "$account" | jq -r '.password')
-            ssh_host=$(echo "$account" | jq -r '.ssh')
+            ssh=$(echo "$account" | jq -r '.ssh')
 
-            echo "==== 连接到 $ssh_host，用户 $username ===="
+            # 将 echo 语句改成只有关键信息输出，减少不必要的日志
+            echo "sshpass -p '$password' ssh -q -o StrictHostKeyChecking=no '$username@$ssh' 'bash <(curl -s https://raw.githubusercontent.com/duanxinyua/socks5-for-serv00/main/check_cron.sh)' > /dev/null 2>&1" >> sshpass.sh
+          done < <(jq -c '.[]' accounts.json)
+          chmod +x sshpass.sh
 
-            expect -c "
-              log_file -a ssh_output.log
-              spawn ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 $username@$ssh_host
-              expect {
-                \"*assword*\" { send \"$password\r\" }
-                timeout { send_user \"连接到 $ssh_host 超时，跳过...\n\"; exit 1 }
-              }
-              expect {
-                \"*ACCOUNT HAS BEEN BLOCKED*\" { send_user \"账号 $username 被封锁，跳过...\n\"; exit 1 }
-                \"*Last login*\" { send_user \"成功连接到 $ssh_host，用户 $username\n\" }
-                timeout { send_user \"连接到 $ssh_host 超时，跳过...\n\"; exit 1 }
-              }
-              send \"curl -s https://raw.githubusercontent.com/duanxinyua/socks5-for-serv00/main/check_cron.sh | bash > /dev/null 2>&1\r\"
-              expect eof
-            "
-
-            if grep -q "账号 $username 被封锁" ssh_output.log; then
-              continue
-            fi
-
-            echo "==== 完成 $username 的任务 ===="
-          done
-          set -e
+      - name: Execute SSH Commands
+        run: ./sshpass.sh
