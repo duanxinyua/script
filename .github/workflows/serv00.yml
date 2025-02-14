@@ -36,13 +36,13 @@ jobs:
 
             echo "连接到 $ssh_host，用户 $username"
 
-            output=$(sshpass -p "$password" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 $username@$ssh_host \
-              "curl -s https://raw.githubusercontent.com/duanxinyua/socks5-for-serv00/main/check_cron.sh | bash" 2>&1)
-            if echo "$output" | grep -q "Permission denied"; then
+            output=$(sshpass -p "$password" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 $username@$ssh_host 2>&1)
+            if echo "$output" | grep -q "ACCOUNT HAS BEEN BLOCKED"; then
               echo "账号 $username 被封锁，跳过..."
             else
               echo "成功连接到 $ssh_host，用户 $username"
-              echo "$output"
+              sshpass -p "$password" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 $username@$ssh_host \
+                "curl -s https://raw.githubusercontent.com/duanxinyua/socks5-for-serv00/main/check_cron.sh | bash"
             fi
           done
           set -e
