@@ -35,21 +35,21 @@ jobs:
 
             echo "==== 连接到 $ssh_host，用户 $username ===="
 
-            expect << EOF
+            expect -c "
               log_file -a ssh_output.log
               spawn ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 $username@$ssh_host
               expect {
-                "*assword*" { send "$password\r" }
-                timeout { send_user "连接到 $ssh_host 超时，跳过...\n"; exit 1 }
+                \"*assword*\" { send \"$password\r\" }
+                timeout { send_user \"连接到 $ssh_host 超时，跳过...\n\"; exit 1 }
               }
               expect {
-                "*ACCOUNT HAS BEEN BLOCKED*" { send_user "账号 $username 被封锁，跳过...\n"; exit 1 }
-                "*Last login*" { send_user "成功连接到 $ssh_host，用户 $username\n" }
-                timeout { send_user "连接到 $ssh_host 超时，跳过...\n"; exit 1 }
+                \"*ACCOUNT HAS BEEN BLOCKED*\" { send_user \"账号 $username 被封锁，跳过...\n\"; exit 1 }
+                \"*Last login*\" { send_user \"成功连接到 $ssh_host，用户 $username\n\" }
+                timeout { send_user \"连接到 $ssh_host 超时，跳过...\n\"; exit 1 }
               }
-              send "curl -s https://raw.githubusercontent.com/duanxinyua/socks5-for-serv00/main/check_cron.sh | bash > /dev/null 2>&1\r"
+              send \"curl -s https://raw.githubusercontent.com/duanxinyua/socks5-for-serv00/main/check_cron.sh | bash > /dev/null 2>&1\r\"
               expect eof
-EOF
+            "
 
             if grep -q "账号 $username 被封锁" ssh_output.log; then
               continue
