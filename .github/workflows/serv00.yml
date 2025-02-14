@@ -35,18 +35,18 @@ jobs:
 
             echo "连接到 $ssh_host，用户 $username"
 
-            expect <<- EOF
-              set timeout 10
-              spawn ssh -o StrictHostKeyChecking=no $username@$ssh_host
-              expect {
-                "assword:" { send -- "$password\r"; exp_continue }
-                "(yes/no)?" { send -- "yes\r"; exp_continue }
-                timeout { puts "SSH 连接超时"; exit 1 }
-              }
-              expect "$ "
-              send -- "curl -s https://raw.githubusercontent.com/duanxinyua/socks5-for-serv00/main/check_cron.sh | bash\r"
-              expect "$ "
-              send -- "exit\r"
-              expect eof
-            EOF
+            expect << EOF
+set timeout 10
+spawn ssh -o StrictHostKeyChecking=no $username@$ssh_host
+expect {
+    "assword:" { send -- "$password\r"; exp_continue }
+    "(yes/no)?" { send -- "yes\r"; exp_continue }
+    timeout { puts "SSH 连接超时"; exit 1 }
+}
+expect "$ "
+send -- "curl -s https://raw.githubusercontent.com/duanxinyua/socks5-for-serv00/main/check_cron.sh | bash\r"
+expect "$ "
+send -- "exit\r"
+expect eof
+EOF
           done
