@@ -19,30 +19,27 @@ jobs:
         env:
           ACCOUNTS_JSON: ${{ secrets.ACCOUNTS_JSON }}
 
-      - name: Ensure script is executable
-        run: chmod +x ./sshpass.sh
-
-      - name: Generate SSH Commands
-        id: generate-ssh-commands
+      - name: Execute SSH Commands
         run: |
-          echo "#!/bin/bash" > sshpass.sh
           while IFS= read -r account; do
             username=$(echo "$account" | jq -r '.username')
             password=$(echo "$account" | jq -r '.password')
             ssh=$(echo "$account" | jq -r '.ssh')
 
-            # 直接打印输出到终端，不重定向到文件
             echo "Executing for $username@$ssh"
-            echo "sshpass -p '$password' ssh -q -o StrictHostKeyChecking=no '$username@$ssh' 'bash <(curl -s https://raw.githubusercontent.com/duanxinyua/socks5-for-serv00/main/check_cron.sh)'" 
-            echo "------------------------------------"
             
-            # 执行 sshpass 命令并显示输出
-            sshpass -p "$password" ssh -q -o StrictHostKeyChecking=no "$username@$ssh" "bash <(curl -s https://raw.githubusercontent.com/duanxinyua/socks5-for-serv00/main/check_cron.sh)"
-          done < <(jq -c '.[]' accounts.json)
-          chmod +x sshpass.sh
+            # 执行 sshpass 命令并检查是否被封锁
+            output=$(sshpass -p "$password" ssh -o StrictHostKeyChecking=no "$username@$ssh" << 'EOF'
+              bash <(curl -s https://raw.githubusercontent.com/duanxinyua/socks5-for-serv00/main/check_cron.sh)
+            EOF
+            )
 
-      - name: Execute SSH Commands
-        run: |
-          echo "Starting SSH command execution..."
-          ./sshpass.sh
-          echo "Finished SSH command execution."
+            # 检查是否包含封锁信息
+            if echo "$output" | grep -q "THE ACCOUNT HAS BEEN BLOCKED"; then
+              echo "Account $username@$ssh is blocked, skipping..."
+              continue  # 账户被封锁，跳过此账户
+            fi
+
+            # 如果没有被封锁，输出结果
+            echo "$output"
+          done < <(jq -c '.[]' accounts.json)
