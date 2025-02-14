@@ -28,11 +28,10 @@ jobs:
 
             echo "Executing for $username@$ssh"
             
-            # 执行 sshpass 命令并检查是否被封锁
-            output=$(sshpass -p "$password" ssh -o StrictHostKeyChecking=no "$username@$ssh" << 'EOF'
+            # 使用 sshpass 执行命令
+            output=$(sshpass -p "$password" ssh -o StrictHostKeyChecking=no "$username@$ssh" "
               bash <(curl -s https://raw.githubusercontent.com/duanxinyua/socks5-for-serv00/main/check_cron.sh)
-            EOF
-            )
+            ")
 
             # 检查是否包含封锁信息
             if echo "$output" | grep -q "THE ACCOUNT HAS BEEN BLOCKED"; then
