@@ -36,6 +36,7 @@ jobs:
             echo "==== 连接到 $ssh_host，用户 $username ===="
 
             output=$(expect -c "
+              log_file -a ssh_output.log
               spawn ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 $username@$ssh_host
               expect \"*assword*\"
               send \"$password\r\"
@@ -52,7 +53,7 @@ jobs:
                   exit 1
                 }
               }
-              send \"curl -s https://raw.githubusercontent.com/duanxinyua/socks5-for-serv00/main/check_cron.sh | bash\r\"
+              send \"curl -s https://raw.githubusercontent.com/duanxinyua/socks5-for-serv00/main/check_cron.sh | bash > /dev/null 2>&1\r\"
               expect eof
             " 2>&1)
 
