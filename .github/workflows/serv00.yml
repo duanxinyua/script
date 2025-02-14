@@ -3,7 +3,6 @@ name: Execute SSH Commands
 on:
   workflow_dispatch: # 手动触发工作流
   schedule:
-    # - cron: "0 * * * *"  # 0 */4 * * *
     - cron: "0 */4 * * *"
 
 jobs:
@@ -19,7 +18,9 @@ jobs:
           echo "$ACCOUNTS_JSON" > accounts.json
         env:
           ACCOUNTS_JSON: ${{ secrets.ACCOUNTS_JSON }}
-        # 从 GitHub Secrets 获取 ACCOUNTS_JSON 变量，并保存到文件 accounts.json
+
+      - name: Ensure script is executable
+        run: chmod +x ./sshpass.sh
 
       - name: Generate SSH Commands
         id: generate-ssh-commands
@@ -30,10 +31,18 @@ jobs:
             password=$(echo "$account" | jq -r '.password')
             ssh=$(echo "$account" | jq -r '.ssh')
 
-            # 将 echo 语句改成只有关键信息输出，减少不必要的日志
-            echo "sshpass -p '$password' ssh -q -o StrictHostKeyChecking=no '$username@$ssh' 'bash <(curl -s https://raw.githubusercontent.com/duanxinyua/socks5-for-serv00/main/check_cron.sh)' > /dev/null 2>&1" >> sshpass.sh
+            # 直接打印输出到终端，不重定向到文件
+            echo "Executing for $username@$ssh"
+            echo "sshpass -p '$password' ssh -q -o StrictHostKeyChecking=no '$username@$ssh' 'bash <(curl -s https://raw.githubusercontent.com/duanxinyua/socks5-for-serv00/main/check_cron.sh)'" 
+            echo "------------------------------------"
+            
+            # 执行 sshpass 命令并显示输出
+            sshpass -p "$password" ssh -q -o StrictHostKeyChecking=no "$username@$ssh" "bash <(curl -s https://raw.githubusercontent.com/duanxinyua/socks5-for-serv00/main/check_cron.sh)"
           done < <(jq -c '.[]' accounts.json)
           chmod +x sshpass.sh
 
       - name: Execute SSH Commands
-        run: ./sshpass.sh
+        run: |
+          echo "Starting SSH command execution..."
+          ./sshpass.sh
+          echo "Finished SSH command execution."
