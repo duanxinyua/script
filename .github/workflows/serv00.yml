@@ -28,6 +28,7 @@ jobs:
 
       - name: 通过 SSH 连接并执行命令
         run: |
+          set +e
           echo "$ACCOUNTS" | jq -c '.[]' | while read -r account; do
             username=$(echo "$account" | jq -r '.username')
             password=$(echo "$account" | jq -r '.password')
@@ -35,9 +36,13 @@ jobs:
 
             echo "连接到 $ssh_host，用户 $username"
 
-            if sshpass -p "$password" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 $username@$ssh_host "curl -s https://raw.githubusercontent.com/duanxinyua/socks5-for-serv00/main/check_cron.sh | bash"; then
-              echo "成功连接到 $ssh_host，用户 $username"
+            output=$(sshpass -p "$password" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 $username@$ssh_host \
+              "curl -s https://raw.githubusercontent.com/duanxinyua/socks5-for-serv00/main/check_cron.sh | bash" 2>&1)
+            if echo "$output" | grep -q "Permission denied"; then
+              echo "账号 $username 被封锁，跳过..."
             else
-              echo "无法连接到 $ssh_host，用户 $username，跳过..."
+              echo "成功连接到 $ssh_host，用户 $username"
+              echo "$output"
             fi
           done
+          set -e
