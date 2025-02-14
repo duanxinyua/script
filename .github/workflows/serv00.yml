@@ -36,7 +36,7 @@ jobs:
 
             echo "连接到 $ssh_host，用户 $username"
 
-            output=$(sshpass -p "$password" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 $username@$ssh_host 2>&1)
+            output=$(sshpass -p "$password" ssh -v -o StrictHostKeyChecking=no -o ConnectTimeout=3 $username@$ssh_host 2>&1)
             if echo "$output" | grep -q "ACCOUNT HAS BEEN BLOCKED"; then
               echo "账号 $username 被封锁，跳过..."
               continue
