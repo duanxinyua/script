@@ -35,6 +35,9 @@ jobs:
 
             echo "连接到 $ssh_host，用户 $username"
 
-            sshpass -p "$password" ssh -o StrictHostKeyChecking=no $username@$ssh_host \
-              "curl -s https://raw.githubusercontent.com/duanxinyua/socks5-for-serv00/main/check_cron.sh | bash" || echo "无法连接到 $ssh_host，用户 $username，跳过..."
+            if sshpass -p "$password" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 $username@$ssh_host "curl -s https://raw.githubusercontent.com/duanxinyua/socks5-for-serv00/main/check_cron.sh | bash"; then
+              echo "成功连接到 $ssh_host，用户 $username"
+            else
+              echo "无法连接到 $ssh_host，用户 $username，跳过..."
+            fi
           done
