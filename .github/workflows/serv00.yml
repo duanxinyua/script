@@ -14,7 +14,6 @@ jobs:
         uses: actions/checkout@v4
 
       - name: 解析 ACCOUNTS_JSON
-        id: parse-accounts
         run: echo "ACCOUNTS=$(echo '${{ secrets.ACCOUNTS_JSON }}' | jq -c .)" >> $GITHUB_ENV
 
       - name: 安装 expect
@@ -32,7 +31,6 @@ jobs:
             echo "连接到 $ssh_host，用户 $username"
 
             expect <<EOF
-set timeout 10
 spawn ssh -o StrictHostKeyChecking=no $username@$ssh_host
 expect "Password:"
 send -- "$password\r"
