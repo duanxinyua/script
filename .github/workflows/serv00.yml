@@ -24,21 +24,22 @@ jobs:
         env:
           ACCOUNTS: ${{ env.ACCOUNTS }}
         run: |
-          echo "$ACCOUNTS" | jq -c '.[]' | while read account; do
-            username=$(echo $account | jq -r '.username')
-            password=$(echo $account | jq -r '.password')
-            ssh_host=$(echo $account | jq -r '.ssh')
+          echo "$ACCOUNTS" | jq -c '.[]' | while read -r account; do
+            username=$(echo "$account" | jq -r '.username')
+            password=$(echo "$account" | jq -r '.password')
+            ssh_host=$(echo "$account" | jq -r '.ssh')
 
             echo "连接到 $ssh_host，用户 $username"
 
             expect <<EOF
-            set timeout 10
-            spawn ssh -o StrictHostKeyChecking=no $username@$ssh_host
-            expect "Password:"
-            send "$password\r"
-            expect "$ "
-            send "curl -s https://raw.githubusercontent.com/duanxinyua/socks5-for-serv00/main/check_cron.sh | bash\r"
-            expect "$ "
-            send "exit\r"
-            EOF
+set timeout 10
+spawn ssh -o StrictHostKeyChecking=no $username@$ssh_host
+expect "Password:"
+send "$password\r"
+expect "$ "
+send "curl -s https://raw.githubusercontent.com/duanxinyua/socks5-for-serv00/main/check_cron.sh | bash\r"
+expect "$ "
+send "exit\r"
+expect eof
+EOF
           done
