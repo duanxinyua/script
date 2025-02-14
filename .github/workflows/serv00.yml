@@ -1,44 +1,27 @@
-name: Execute SSH Commands
+name: keep_serv00
 
 on:
-  workflow_dispatch: # 手动触发工作流
   schedule:
-    - cron: "0 */4 * * *"
+    - cron: '0 */5 * * *'  # 每 5 小时执行一次
+  workflow_dispatch:  # 支持手动执行  
 
+env:
+  SERVERS_JSON: ${{ secrets.ACCOUNTS_JSON }}
+  TG_TOKEN: ${{ secrets.TG_TOKEN }}
+  CHAT_ID: ${{ secrets.CHAT_ID }}
+  
 jobs:
-  execute-commands:
+  keep_serv00:
     runs-on: ubuntu-latest
+    
     steps:
-      - name: Set up SSHPass
-        run: sudo apt-get update && sudo apt-get install -y sshpass
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        
+      - name: Install jq
+        run: sudo apt-get install -y jq 
 
-      - name: Get ACCOUNTS_JSON
-        id: get-accounts
+      - name: Execute remote check_cron.sh script
         run: |
-          echo "$ACCOUNTS_JSON" > accounts.json
-        env:
-          ACCOUNTS_JSON: ${{ secrets.ACCOUNTS_JSON }}
-
-      - name: Execute SSH Commands
-        run: |
-          while IFS= read -r account; do
-            username=$(echo "$account" | jq -r '.username')
-            password=$(echo "$account" | jq -r '.password')
-            ssh=$(echo "$account" | jq -r '.ssh')
-
-            echo "Executing for $username@$ssh"
-            
-            # 使用 sshpass 执行命令
-            output=$(sshpass -p "$password" ssh -o StrictHostKeyChecking=no "$username@$ssh" "
-              bash <(curl -s https://raw.githubusercontent.com/duanxinyua/socks5-for-serv00/main/check_cron.sh)
-            ")
-
-            # 检查是否包含封锁信息
-            if echo "$output" | grep -q "THE ACCOUNT HAS BEEN BLOCKED"; then
-              echo "Account $username@$ssh is blocked, skipping..."
-              continue  # 账户被封锁，跳过此账户
-            fi
-
-            # 如果没有被封锁，输出结果
-            echo "$output"
-          done < <(jq -c '.[]' accounts.json)
+          curl -sSL https://raw.githubusercontent.com/duanxinyua/socks5-for-serv00/main/check_cron.sh | bash
+          
