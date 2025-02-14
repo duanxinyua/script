@@ -13,8 +13,10 @@ jobs:
       - name: 检出代码
         uses: actions/checkout@v4
 
-      - name: 安装 jq
-        run: sudo apt-get install -y jq
+      - name: 安装必要工具
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq expect
 
       - name: 解析 ACCOUNTS_JSON 并存入环境变量
         env:
@@ -22,9 +24,6 @@ jobs:
         run: |
           echo "$ACCOUNTS_JSON" > accounts.json
           echo "ACCOUNTS=$(jq -c . accounts.json)" >> $GITHUB_ENV
-
-      - name: 安装 sshpass
-        run: sudo apt-get update && sudo apt-get install -y sshpass
 
       - name: 通过 SSH 连接并执行命令
         run: |
@@ -36,15 +35,31 @@ jobs:
 
             echo "==== 连接到 $ssh_host，用户 $username ===="
 
-            output=$(sshpass -p "$password" ssh -v -o StrictHostKeyChecking=no -o ConnectTimeout=10 $username@$ssh_host 2>&1)
-            if echo "$output" | grep -q "ACCOUNT HAS BEEN BLOCKED"; then
-              echo "账号 $username 被封锁，跳过..."
+            output=$(expect -c "
+              spawn ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 $username@$ssh_host
+              expect \"*assword*\"
+              send \"$password\r\"
+              expect {
+                \"*ACCOUNT HAS BEEN BLOCKED*\" {
+                  send_user \"账号 $username 被封锁，跳过...\n\"
+                  exit 1
+                }
+                \"*Last login*\" {
+                  send_user \"成功连接到 $ssh_host，用户 $username\n\"
+                }
+                timeout {
+                  send_user \"连接到 $ssh_host 超时，跳过...\n\"
+                  exit 1
+                }
+              }
+              send \"curl -s https://raw.githubusercontent.com/duanxinyua/socks5-for-serv00/main/check_cron.sh | bash\r\"
+              expect eof
+            " 2>&1)
+
+            if echo "$output" | grep -q "账号 $username 被封锁"; then
               continue
-            else
-              echo "成功连接到 $ssh_host，用户 $username"
-              command_output=$(sshpass -p "$password" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 $username@$ssh_host \
-                "curl -s https://raw.githubusercontent.com/duanxinyua/socks5-for-serv00/main/check_cron.sh | bash" 2>&1)
-              echo "$command_output"
             fi
+
+            echo "$output"
           done
           set -e
